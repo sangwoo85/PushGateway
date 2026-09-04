@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>DEPL QR 등록</title><link rel="stylesheet" th:href="@{/push-test.css}"></head>
+<body><main class="shell"><section class="panel">
+  <header class="head"><div class="brand"><div class="mark" aria-hidden="true"><i class="dot red"></i><i class="dot blue1"></i><i class="dot blue2"></i></div><div><strong>DEPL</strong><span>Push Gateway</span></div></div><nav class="nav"><a class="active" th:href="@{/internal/push-test/enrollment}">QR 등록</a><a th:href="@{/internal/push-test/messages}">메시지 테스트</a></nav></header>
+  <div class="content"><h1 class="title">앱 알림 등록 QR</h1><p class="lead">사용자와 부서를 입력해 일회성 서명 QR을 만들고, Android 앱의 QR 등록 메뉴로 촬영하세요.</p>
+    <div class="grid"><section class="card"><form method="get" th:action="@{/internal/push-test/enrollment}"><label for="userId">사용자 ID</label><input id="userId" name="userId" maxlength="128" required autocomplete="off" th:value="${userId}" placeholder="예: user001"><label for="departmentId">부서 ID</label><input id="departmentId" name="departmentId" maxlength="128" required autocomplete="off" th:value="${departmentId}" placeholder="예: DEV"><button type="submit" style="margin-top:20px">등록 QR 생성</button></form>
+      <ol class="steps"><li>DEPL 앱에서 <b>QR 등록</b>을 누릅니다.</li><li>카메라 권한을 허용합니다.</li><li>오른쪽 QR을 유효시간 안에 촬영합니다.</li><li>사용자·부서·공지 3개 구독 완료를 확인합니다.</li></ol><small>QR은 토픽을 직접 표시하지 않으며 Gateway 개인키로 서명됩니다. 앱과 Gateway의 직접 통신은 없습니다.</small></section>
+    <section class="card soft qr-wrap"><div th:if="${qrReady}"><img alt="DEPL 앱 등록 QR" th:src="@{/internal/push-test/qr(userId=${userId},departmentId=${departmentId})}"><b>생성된 QR을 바로 촬영하세요.</b><span class="hint" th:text="|유효시간: 생성 후 ${qrTtlSeconds}초|">유효시간</span></div><div class="qr-placeholder" th:unless="${qrReady}">사용자 ID와 부서 ID를 입력하면<br>등록용 QR이 여기에 표시됩니다.</div></section></div>
+  </div>
+</section></main></body></html>

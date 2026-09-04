@@ -1,0 +1,4 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="app_name">DEPL</string>
+    <string name="enrollment_public_key_x963" translatable="false" tools:ignore="Typos">BN+fQ79z6YHt8gnWI5hlXvwKO9O5jzyFm0YYbsqvQZbywsV9vkO3RE1GG+uFbW5BTHIRsMI8LMk4hem4sv7p0BM=</string>
+</resources>

@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>DEPL Push 테스트</title><link rel="stylesheet" th:href="@{/push-test.css}"></head>
+<body><main class="shell"><section class="panel">
+  <header class="head"><div class="brand"><div class="mark" aria-hidden="true"><i class="dot red"></i><i class="dot blue1"></i><i class="dot blue2"></i></div><div><strong>DEPL</strong><span>Push Gateway</span></div></div><nav class="nav"><a th:href="@{/internal/push-test/enrollment}">QR 등록</a><a class="active" th:href="@{/internal/push-test/messages}">메시지 테스트</a></nav></header>
+  <div class="content"><h1 class="title">Push 메시지 테스트</h1><p class="lead">대상과 고정 알림 유형을 선택하면 Queue에 등록되고, Scheduler가 FCM으로 전송합니다.</p>
+    <p class="notice" th:if="${!firebaseEnabled}">현재 실제 FCM 발송이 비활성화되어 있습니다.</p><p class="error" th:if="${error}" th:text="${error}"></p>
+    <div class="grid"><section class="card"><form method="post" th:action="@{/internal/push-test/send}" th:object="${form}" id="sendForm">
+      <label for="targetType">발송 대상</label><select id="targetType" th:field="*{targetType}"><option value="USER">사용자</option><option value="DEPARTMENT">부서</option><option value="NOTICE">전체 공지</option></select>
+      <label for="targetId">대상 ID</label><input id="targetId" th:field="*{targetId}" maxlength="128" autocomplete="off" placeholder="사용자 또는 부서 ID"><small>사용자·부서 발송은 대상 ID가 필요합니다. 전체 공지는 비워 둡니다.</small>
+      <label for="notificationType">알림 종류</label><select id="notificationType" th:field="*{notificationType}"><option th:each="v:${types}" th:value="${v}" th:text="${v.displayName()}"></option></select>
+      <div id="actorBox"><label for="actorName">행위자 이름</label><input id="actorName" th:field="*{actorName}" maxlength="50" placeholder="예: 홍길동"><small>업무 언급·댓글 언급 알림에만 사용합니다.</small></div>
+      <label class="inline-check" id="confirmBox"><input type="checkbox" th:field="*{confirmed}"><span>부서 또는 전체 공지의 다수 발송을 확인했습니다.</span></label><button type="submit" style="margin-top:20px">Queue 등록 및 전송</button></form></section>
+      <section class="card soft"><h2 style="margin-top:0">사용자·부서 찾기</h2><form method="get" th:action="@{/internal/push-test/messages}"><label for="searchType">검색 종류</label><select id="searchType" name="searchType"><option value="USER" th:selected="${searchType.name() == 'USER'}">사용자</option><option value="DEPARTMENT" th:selected="${searchType.name() == 'DEPARTMENT'}">부서</option></select><label for="q">검색어</label><input id="q" name="q" maxlength="100"><button type="submit" style="margin-top:15px">검색</button></form>
+        <ul class="search-results"><li th:each="r:${results}"><a th:href="@{/internal/push-test/messages(searchType=${searchType},selectedTarget=${r.id})}" th:text="|${r.displayName} (${r.id}) 선택|">대상 선택</a></li></ul><p class="hint" th:if="${#lists.isEmpty(results)}">연결된 업무 사용자·부서 검색 결과가 없습니다. 위 발송 양식에 ID를 직접 입력할 수 있습니다.</p></section>
+    </div>
+  </div>
+</section></main>
+<script>const type=document.getElementById('targetType'),id=document.getElementById('targetId'),notice=document.getElementById('notificationType'),actor=document.getElementById('actorName'),actorBox=document.getElementById('actorBox'),confirmBox=document.getElementById('confirmBox');function sync(){const broadcast=type.value!=='USER';confirmBox.style.display=broadcast?'flex':'none';if(type.value==='NOTICE'){id.value='';id.disabled=true}else{id.disabled=false}const mention=notice.value==='TASK_MENTIONED'||notice.value==='COMMENT_MENTIONED';actorBox.style.display=mention?'block':'none';actor.disabled=!mention;if(!mention)actor.value=''}type.addEventListener('change',sync);notice.addEventListener('change',sync);sync();</script>
+</body></html>

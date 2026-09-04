@@ -1,0 +1,46 @@
+spring:
+  application:
+    name: push-gateway
+  datasource:
+    url: ${DB_URL:jdbc:mariadb://localhost:3306/business}
+    username: ${DB_USERNAME:business}
+    password: ${DB_PASSWORD:}
+    hikari:
+      maximum-pool-size: 10
+  flyway:
+    enabled: true
+  jackson:
+    default-property-inclusion: non_null
+
+push:
+  scheduler:
+    enabled: ${PUSH_SCHEDULER_ENABLED:true}
+    fixed-delay: ${PUSH_SCHEDULER_DELAY:30s}
+    batch-size: ${PUSH_BATCH_SIZE:100}
+    processing-timeout: ${PUSH_PROCESSING_TIMEOUT:5m}
+    max-attempts: ${PUSH_MAX_ATTEMPTS:5}
+  firebase:
+    enabled: ${FIREBASE_ENABLED:false}
+    project-id: ${FIREBASE_PROJECT_ID:}
+  qr:
+    private-key-path: ${PUSH_QR_PRIVATE_KEY_PATH:}
+    ttl: ${PUSH_QR_TTL:3m}
+  test-page:
+    enabled: ${PUSH_TEST_PAGE_ENABLED:false}
+    username: ${PUSH_TEST_PAGE_USERNAME:}
+    password-hash: ${PUSH_TEST_PAGE_PASSWORD_HASH:}
+    enqueue-when-firebase-disabled: ${PUSH_TEST_ENQUEUE_WHEN_FIREBASE_DISABLED:true}
+    requests-per-minute: ${PUSH_TEST_REQUESTS_PER_MINUTE:10}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: never
+
+logging:
+  pattern:
+    level: "%5p [eventId:%X{eventId:-}]"
