@@ -4,22 +4,13 @@ struct PushHistoryItem: Codable, Identifiable, Equatable, Sendable {
     let eventId: UUID
     let notificationType: NotificationType
     let actorName: String?
+    let title: String?
+    let body: String?
     let sentAt: Date
 
     var id: UUID { eventId }
 
-    var message: String {
-        switch notificationType {
-        case .commentAdded: "본인 업무에 댓글이 작성 되었습니다."
-        case .taskMentioned: "\(actorName ?? "담당자") 님이 업무에 당신을 언급하였습니다."
-        case .commentMentioned: "\(actorName ?? "담당자") 님이 댓글에 당신을 언급 하였습니다."
-        case .sourceConflict: "소스 겹침 알림"
-        case .noticeRegistered: "공지 사항이 등록 되었습니다."
-        case .taskArrived: "업무가 도착 했습니다."
-        case .approvalTaskArrived: "결재할 업무가 도착 했습니다."
-        case .mentionedTaskDeployed: "당신이 언급된 업무가 운영에 반영 되었습니다."
-        }
-    }
+    var message: String { body ?? "업무 알림이 도착했습니다." }
 
     enum NotificationType: String, Codable, Sendable {
         case commentAdded = "COMMENT_ADDED"
@@ -106,7 +97,9 @@ final class LocalNotificationHistoryStore {
             let rawEventId = userInfo["eventId"] as? String,
             let eventId = UUID(uuidString: rawEventId),
             let rawType = userInfo["notificationType"] as? String,
-            let type = PushHistoryItem.NotificationType(payloadValue: rawType)
+            let type = PushHistoryItem.NotificationType(payloadValue: rawType),
+            let title = normalized(userInfo["title"] as? String, maximum: 50),
+            let body = normalized(userInfo["body"] as? String, maximum: 200)
         else { return load() }
 
         var items = load()
@@ -115,6 +108,8 @@ final class LocalNotificationHistoryStore {
             eventId: eventId,
             notificationType: type,
             actorName: userInfo["actorName"] as? String,
+            title: title,
+            body: body,
             sentAt: Date()
         )
         items.insert(item, at: 0)
@@ -186,6 +181,14 @@ final class LocalNotificationHistoryStore {
     private func cache(_ items: [PushHistoryItem]) {
         cachedItems = items
         cachedEventIDs = Set(items.map(\.eventId))
+    }
+
+    private func normalized(_ value: String?, maximum: Int) -> String? {
+        guard let value else { return nil }
+        let components = value.components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty }
+        let normalized = components.joined(separator: " ")
+        guard !normalized.isEmpty else { return nil }
+        return String(normalized.prefix(maximum))
     }
 
     private var encoder: JSONEncoder {

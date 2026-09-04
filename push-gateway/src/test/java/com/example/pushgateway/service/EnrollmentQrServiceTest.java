@@ -44,7 +44,7 @@ class EnrollmentQrServiceTest {
                 new PushProperties.Scheduler(false, Duration.ofSeconds(30), 100, Duration.ofMinutes(5), 5),
                 new PushProperties.Firebase(false, "depl-project"),
                 new PushProperties.Qr(privatePath.toString(), Duration.ofMinutes(3)),
-                new PushProperties.TestPage(false, "", "", true, 10));
+                new PushProperties.TestPage(false, true, "", "", true, 10));
         Instant now = Instant.parse("2026-09-03T00:00:00Z");
         var service = new EnrollmentQrService(topicService, properties, new ObjectMapper(),
                 new SimpleMeterRegistry(), Clock.fixed(now, ZoneOffset.UTC));

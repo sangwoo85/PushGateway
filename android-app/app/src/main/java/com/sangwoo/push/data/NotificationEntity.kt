@@ -13,9 +13,10 @@ data class NotificationEntity(
     val eventId: String,
     val notificationType: String,
     val actorName: String?,
+    val title: String,
+    val body: String,
     val receivedAt: Long,
     val isRead: Boolean = false
 ) {
     fun type(): NotificationType? = NotificationType.fromWire(notificationType)
-    fun message(): String? = type()?.message(actorName)
 }

@@ -1,6 +1,7 @@
 package com.example.pushgateway.sender;
 
 import com.example.pushgateway.domain.PushQueueItem;
+import com.example.pushgateway.template.NotificationTemplateFactory;
 import com.example.pushgateway.template.NotificationTemplateFactory.NotificationContent;
 import com.google.firebase.messaging.ApnsConfig;
 import com.google.firebase.messaging.AndroidConfig;
@@ -43,8 +44,9 @@ public class FirebasePushSender implements PushSender {
                 .setTopic(topic)
                 .putData("eventId", item.eventId().toString())
                 .putData("notificationType", item.notificationType().wireName())
-                .putAllData(item.actorName() == null ? java.util.Map.of() :
-                        java.util.Map.of("actorName", item.actorName()))
+                .putData("title", content.title())
+                .putData("body", content.body())
+                .putData("templateVersion", NotificationTemplateFactory.TEMPLATE_VERSION)
                 // Android must receive data-only messages so FirebaseMessagingService can
                 // persist every event before showing the local notification.
                 .setAndroidConfig(AndroidConfig.builder()

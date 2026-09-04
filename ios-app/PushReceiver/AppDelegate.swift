@@ -22,11 +22,14 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
 
     func application(_ application: UIApplication,
                      didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+        print("[DEPL] APNs registration succeeded")
         Messaging.messaging().apnsToken = deviceToken
     }
 
     func application(_ application: UIApplication,
                      didFailToRegisterForRemoteNotificationsWithError error: Error) {
+        let nsError = error as NSError
+        print("[DEPL] APNs registration failed: \(nsError.domain) \(nsError.code) \(nsError.localizedDescription)")
         NotificationRegistrationManager.shared.setRegistrationError(error)
     }
 
@@ -41,9 +44,16 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
 }
 
 extension AppDelegate: @preconcurrency MessagingDelegate {
+    func messaging(_ messaging: Messaging, didReceiveRegistration installationID: String?) {
+        guard installationID != nil else { return }
+        print("[DEPL] FCM installation registration succeeded")
+        NotificationRegistrationManager.shared.receivedFCMRegistrationToken()
+    }
+
     func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
         guard let fcmToken else { return }
         _ = fcmToken
+        print("[DEPL] FCM registration succeeded")
         NotificationRegistrationManager.shared.receivedFCMRegistrationToken()
     }
 }

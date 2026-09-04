@@ -5,9 +5,11 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import android.os.PowerManager
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -26,6 +28,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DeleteSweep
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.filled.QrCodeScanner
@@ -38,16 +42,21 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Typography
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -58,9 +67,14 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.sangwoo.push.data.NotificationEntity
 import com.sangwoo.push.ui.DeplBlue
@@ -84,8 +98,22 @@ fun DeplApp(viewModel: MainViewModel) {
             context, Manifest.permission.POST_NOTIFICATIONS
         ) == PackageManager.PERMISSION_GRANTED)
     }
+    var batteryOptimizationExcluded by remember { mutableStateOf(isBatteryOptimizationExcluded(context)) }
+    val lifecycleOwner = LocalLifecycleOwner.current
     val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
         notificationsAllowed = it
+    }
+    val systemSettingsRequest = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        batteryOptimizationExcluded = isBatteryOptimizationExcluded(context)
+    }
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                batteryOptimizationExcluded = isBatteryOptimizationExcluded(context)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
     LaunchedEffect(Unit) {
         if (Build.VERSION.SDK_INT >= 33 && !notificationsAllowed) {
@@ -94,22 +122,33 @@ fun DeplApp(viewModel: MainViewModel) {
     }
     LaunchedEffect(enrollment) { if (enrollment is EnrollmentUiState.Success) showScanner = false }
 
-    MaterialTheme {
+    MaterialTheme(colorScheme = DeplColorScheme, typography = DeplTypography) {
         if (showScanner) {
             QrScanner(onQr = viewModel::register, onClose = { showScanner = false })
         } else {
             MainScreen(
                 registered = registered,
                 notificationsAllowed = notificationsAllowed,
+                batteryOptimizationExcluded = batteryOptimizationExcluded,
                 itemCount = history.itemCount,
                 itemAt = { history[it] },
                 onScan = { viewModel.dismissStatus(); showScanner = true },
                 onReset = { showReset = true },
                 onClear = { showClear = true },
                 onOpenSettings = {
-                    context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                        data = Uri.fromParts("package", context.packageName, null)
+                    context.startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                        putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
                     })
+                },
+                onRequestBatteryExclusion = {
+                    val directRequest = Intent(
+                        Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
+                        Uri.parse("package:${context.packageName}")
+                    )
+                    val fallback = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+                    systemSettingsRequest.launch(
+                        directRequest.takeIf { it.resolveActivity(context.packageManager) != null } ?: fallback
+                    )
                 }
             )
         }
@@ -158,19 +197,29 @@ fun DeplApp(viewModel: MainViewModel) {
 private fun MainScreen(
     registered: Boolean,
     notificationsAllowed: Boolean,
+    batteryOptimizationExcluded: Boolean,
     itemCount: Int,
     itemAt: (Int) -> NotificationEntity?,
     onScan: () -> Unit,
     onReset: () -> Unit,
     onClear: () -> Unit,
-    onOpenSettings: () -> Unit
+    onOpenSettings: () -> Unit,
+    onRequestBatteryExclusion: () -> Unit
 ) {
     LazyColumn(
         Modifier.fillMaxSize().background(DeplYellow).padding(horizontal = 20.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         item { Spacer(Modifier.height(38.dp)); BrandHeader() }
-        item { StatusCard(registered, notificationsAllowed, onOpenSettings) }
+        item {
+            StatusCard(
+                registered,
+                notificationsAllowed,
+                batteryOptimizationExcluded,
+                onOpenSettings,
+                onRequestBatteryExclusion
+            )
+        }
         item {
             Button(
                 onClick = onScan,
@@ -233,7 +282,13 @@ private fun MainScreen(
 @Composable
 private fun BrandHeader() {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-        Text("DEPL", fontSize = 27.sp, fontWeight = FontWeight.Black, letterSpacing = .2.sp)
+        Text(
+            "DEPL",
+            fontSize = 25.sp,
+            fontWeight = FontWeight.Bold,
+            fontFamily = FontFamily.SansSerif,
+            letterSpacing = .2.sp
+        )
         Image(
             painterResource(R.drawable.e9pay_dots_extracted), "E9pay 브랜드 점 심볼",
             contentScale = ContentScale.Fit,
@@ -246,28 +301,86 @@ private fun BrandHeader() {
 }
 
 @Composable
-private fun StatusCard(registered: Boolean, allowed: Boolean, onOpenSettings: () -> Unit) {
+private fun StatusCard(
+    registered: Boolean,
+    allowed: Boolean,
+    batteryOptimizationExcluded: Boolean,
+    onOpenSettings: () -> Unit,
+    onRequestBatteryExclusion: () -> Unit
+) {
+    var expanded by rememberSaveable { mutableStateOf(false) }
     Card(
-        Modifier.fillMaxWidth(), shape = RoundedCornerShape(22.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White), elevation = CardDefaults.cardElevation(7.dp)
+        onClick = { expanded = !expanded },
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(5.dp)
     ) {
-        Row(Modifier.padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(62.dp).background(Color(0xFFFFF3BF), CircleShape), contentAlignment = Alignment.Center) {
-                Icon(if (registered && allowed) Icons.Default.Notifications else Icons.Default.NotificationsOff, null,
-                    modifier = Modifier.size(28.dp), tint = Color.Black)
-                if (registered && allowed) Box(Modifier.align(Alignment.TopEnd).size(15.dp).background(DeplBlue, CircleShape))
-            }
-            Column(Modifier.padding(start = 16.dp).weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                Text(
-                    when {
-                        !allowed -> "알림 권한이 꺼져 있습니다."
-                        registered -> "알림을 받을 준비가 되었습니다."
-                        else -> "QR로 기기를 등록해 주세요."
-                    },
-                    fontWeight = FontWeight.Bold, fontSize = 17.sp
+        Column {
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 13.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("알림 설정", fontSize = 15.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                Icon(
+                    if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    contentDescription = if (expanded) "알림 설정 접기" else "알림 설정 펼치기",
+                    tint = Color.Black.copy(alpha = .55f)
                 )
-                Text("알림 권한 · ${if (allowed) "허용" else "거부"}", fontSize = 13.sp, color = Color.Gray)
-                if (!allowed) TextButton(onClick = onOpenSettings) { Text("시스템 설정 열기", color = DeplRed) }
+            }
+            AnimatedVisibility(visible = expanded) {
+                Column {
+                    HorizontalDivider(color = Color.Black.copy(alpha = .08f))
+                    Row(Modifier.padding(16.dp), verticalAlignment = Alignment.Top) {
+                        Box(
+                            Modifier.size(48.dp).background(Color(0xFFFFF3BF), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                if (registered && allowed && batteryOptimizationExcluded) Icons.Default.Notifications else Icons.Default.NotificationsOff,
+                                null,
+                                modifier = Modifier.size(23.dp),
+                                tint = Color.Black
+                            )
+                            if (registered && allowed && batteryOptimizationExcluded) {
+                                Box(Modifier.align(Alignment.TopEnd).size(12.dp).background(DeplBlue, CircleShape))
+                            }
+                        }
+                        Column(
+                            Modifier.padding(start = 14.dp).weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Text(
+                                when {
+                                    !allowed -> "알림 권한이 꺼져 있습니다."
+                                    !batteryOptimizationExcluded -> "배터리 최적화를 제외해 주세요."
+                                    registered -> "알림을 받을 준비가 되었습니다."
+                                    else -> "QR로 기기를 등록해 주세요."
+                                },
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp
+                            )
+                            Text("알림 권한 · ${if (allowed) "허용" else "거부"}", fontSize = 12.sp, color = Color.Gray)
+                            Text(
+                                "배터리 최적화 · ${if (batteryOptimizationExcluded) "제외됨" else "사용 중"}",
+                                fontSize = 12.sp,
+                                color = Color.Gray
+                            )
+                            if (!allowed) {
+                                TextButton(onClick = onOpenSettings) { Text("알림 설정 열기", color = DeplRed) }
+                            } else if (!batteryOptimizationExcluded) {
+                                Button(
+                                    onClick = onRequestBatteryExclusion,
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
+                                    shape = RoundedCornerShape(10.dp)
+                                ) { Text("배터리 최적화 제외", fontSize = 12.sp, fontWeight = FontWeight.Bold) }
+                            }
+                            TextButton(onClick = onOpenSettings) {
+                                Text("잠금 화면 · 팝업 설정", color = Color.Black, fontSize = 12.sp)
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -282,17 +395,41 @@ private fun HistoryRow(item: NotificationEntity) {
         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(
                 Modifier.size(40.dp).background(
-                    if (item.type()?.channel()?.id == "depl_important") DeplRed.copy(alpha = .16f) else DeplBlue.copy(alpha = .16f),
+                    if (item.type()?.channel() == com.sangwoo.push.data.NotificationChannelKind.IMPORTANT) DeplRed.copy(alpha = .16f) else DeplBlue.copy(alpha = .16f),
                     CircleShape
                 ), contentAlignment = Alignment.Center
             ) { Icon(Icons.Default.Notifications, null, tint = Color.Black) }
             Column(Modifier.padding(start = 14.dp).weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                Text(item.message().orEmpty(), fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                Text(item.body, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                 Text(DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(item.receivedAt)),
                     fontSize = 12.sp, color = Color.Gray)
             }
         }
     }
+}
+
+private val DeplColorScheme = lightColorScheme(
+    primary = Color.Black,
+    onPrimary = Color.White,
+    background = DeplYellow,
+    onBackground = Color.Black,
+    surface = Color.White,
+    onSurface = Color.Black
+)
+
+private val DeplTypography = Typography(
+    bodyLarge = TextStyle(fontFamily = FontFamily.SansSerif, fontWeight = FontWeight.Normal, fontSize = 16.sp),
+    bodyMedium = TextStyle(fontFamily = FontFamily.SansSerif, fontWeight = FontWeight.Normal, fontSize = 14.sp),
+    bodySmall = TextStyle(fontFamily = FontFamily.SansSerif, fontWeight = FontWeight.Medium, fontSize = 12.sp),
+    titleLarge = TextStyle(fontFamily = FontFamily.SansSerif, fontWeight = FontWeight.Bold, fontSize = 21.sp),
+    titleMedium = TextStyle(fontFamily = FontFamily.SansSerif, fontWeight = FontWeight.Bold, fontSize = 17.sp),
+    labelLarge = TextStyle(fontFamily = FontFamily.SansSerif, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+)
+
+private fun isBatteryOptimizationExcluded(context: android.content.Context): Boolean {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return true
+    val powerManager = context.getSystemService(PowerManager::class.java)
+    return powerManager.isIgnoringBatteryOptimizations(context.packageName)
 }
 
 @Composable

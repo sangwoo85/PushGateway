@@ -15,16 +15,12 @@ class NotificationTypeTest {
         assertNull(NotificationType.fromWire("UNKNOWN"))
     }
 
-    @Test fun mentionRequiresAndNormalizesActor() {
-        assertNull(NotificationType.TASK_MENTIONED.message("  "))
-        assertEquals("김 상우 님이 댓글에 당신을 언급 하였습니다.",
-            NotificationType.COMMENT_MENTIONED.message("  김\n상우  "))
-        assertEquals("업무가 도착 했습니다.", NotificationType.TASK_ARRIVED.message("무시"))
-    }
-
     @Test fun selectsChannels() {
         assertEquals(NotificationChannelKind.NOTICE, NotificationType.NOTICE_REGISTERED.channel())
         assertEquals(NotificationChannelKind.IMPORTANT, NotificationType.APPROVAL_TASK_ARRIVED.channel())
         assertEquals(NotificationChannelKind.GENERAL, NotificationType.TASK_ARRIVED.channel())
+        assertEquals("depl_general_v2", NotificationChannelKind.GENERAL.id)
+        assertEquals("depl_notice_v2", NotificationChannelKind.NOTICE.id)
+        assertEquals("depl_important_v2", NotificationChannelKind.IMPORTANT.id)
     }
 }

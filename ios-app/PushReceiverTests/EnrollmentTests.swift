@@ -209,12 +209,18 @@ final class LocalNotificationHistoryStoreTests: XCTestCase {
         defer { defaults.removePersistentDomain(forName: suiteName) }
         let store = LocalNotificationHistoryStore(defaults: defaults)
         let eventId = UUID().uuidString
-        let payload: [AnyHashable: Any] = ["eventId": eventId, "notificationType": "TASK_ARRIVED"]
+        let payload: [AnyHashable: Any] = [
+            "eventId": eventId,
+            "notificationType": "TASK_ARRIVED",
+            "title": "업무 알림",
+            "body": "Gateway에서 만든 문구"
+        ]
 
         _ = store.ingest(userInfo: payload)
         _ = store.ingest(userInfo: payload)
 
         XCTAssertEqual(store.load().count, 1)
+        XCTAssertEqual(store.load().first?.message, "Gateway에서 만든 문구")
     }
 
     func testUnknownNotificationTypeIsIgnored() {
@@ -224,6 +230,20 @@ final class LocalNotificationHistoryStoreTests: XCTestCase {
         let store = LocalNotificationHistoryStore(defaults: defaults)
 
         _ = store.ingest(userInfo: ["eventId": UUID().uuidString, "notificationType": "UNKNOWN"])
+
+        XCTAssertTrue(store.load().isEmpty)
+    }
+
+    func testPayloadWithoutGatewayRenderedMessageIsIgnored() {
+        let suiteName = "LocalNotificationHistoryStoreTests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let store = LocalNotificationHistoryStore(defaults: defaults)
+
+        _ = store.ingest(userInfo: [
+            "eventId": UUID().uuidString,
+            "notificationType": "TASK_ARRIVED"
+        ])
 
         XCTAssertTrue(store.load().isEmpty)
     }
@@ -238,7 +258,9 @@ final class LocalNotificationHistoryStoreTests: XCTestCase {
         for eventId in eventIds {
             _ = store.ingest(userInfo: [
                 "eventId": eventId.uuidString,
-                "notificationType": "TASK_ARRIVED"
+                "notificationType": "TASK_ARRIVED",
+                "title": "업무 알림",
+                "body": "Gateway에서 만든 문구"
             ])
         }
 

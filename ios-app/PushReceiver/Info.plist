@@ -19,6 +19,7 @@
     <key>UIBackgroundModes</key>
     <array><string>remote-notification</string></array>
     <key>FIREBASE_PROJECT_ID</key><string>depl-162ae</string>
+    <key>FirebaseMessagingInstallationIdEnabled</key><true/>
     <key>ENROLLMENT_PUBLIC_KEY_X963_BASE64</key>
     <string>BN+fQ79z6YHt8gnWI5hlXvwKO9O5jzyFm0YYbsqvQZbywsV9vkO3RE1GG+uFbW5BTHIRsMI8LMk4hem4sv7p0BM=</string>
 </dict>

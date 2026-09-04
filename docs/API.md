@@ -112,7 +112,9 @@ Android는 data-only 메시지로 받고, iOS는 동일 data와 APNs alert를 �
 {
   "eventId": "96a25bc0-4477-4a02-ae4b-d13f0fa9cd03",
   "notificationType": "TASK_MENTIONED",
-  "actorName": "홍길동"
+  "title": "업무 알림",
+  "body": "홍길동 님이 업무에 당신을 언급하였습니다.",
+  "templateVersion": "1"
 }
 ```
 
@@ -120,9 +122,11 @@ Android는 data-only 메시지로 받고, iOS는 동일 data와 APNs alert를 �
 |---|---|---|---|
 | `eventId` | UUID 문자열 | 예 | 앱 중복 방지 키 |
 | `notificationType` | enum 문자열 | 예 | 루트 README의 8종 Payload 값 |
-| `actorName` | 문자열 | 조건부 | 언급 유형 2종에만 포함 |
+| `title` | 문자열 | 예 | Gateway가 생성한 알림 제목, 최대 50자 |
+| `body` | 문자열 | 예 | Gateway가 생성한 승인된 알림 문구, 최대 200자 |
+| `templateVersion` | 문자열 | 예 | Gateway 문구 명세 버전 |
 
-앱은 알 수 없는 유형, UUID가 아닌 `eventId`, 규칙에 맞지 않는 `actorName`을 저장하지 않습니다.
+앱은 알 수 없는 유형, UUID가 아닌 `eventId`, 제목이나 본문이 없는 신규 Payload를 저장하지 않습니다. 문구의 단일 관리 지점은 Gateway의 `NotificationTemplateFactory`이며 앱은 `title`과 `body`를 그대로 저장·표시합니다. `actorName`은 Gateway 내부에서 언급 문구를 만들 때만 사용하고 FCM data로 별도 전송하지 않습니다.
 
 ## QR Payload 계약
 

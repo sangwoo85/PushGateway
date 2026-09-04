@@ -180,8 +180,14 @@ final class FCMTopicSubscriptionService: TopicSubscribing {
         guard FirebaseApp.app() != nil else { throw EnrollmentError.firebaseUnavailable }
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             Messaging.messaging().register { error in
-                if let error { continuation.resume(throwing: error) }
-                else { continuation.resume(returning: ()) }
+                if let error {
+                    let nsError = error as NSError
+                    print("[DEPL] FCM registration failed: \(nsError.domain) \(nsError.code) \(nsError.localizedDescription)")
+                    continuation.resume(throwing: error)
+                } else {
+                    print("[DEPL] FCM registration confirmed")
+                    continuation.resume(returning: ())
+                }
             }
         }
     }
@@ -189,8 +195,14 @@ final class FCMTopicSubscriptionService: TopicSubscribing {
     func subscribe(to topic: String) async throws {
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             Messaging.messaging().subscribe(toTopic: topic) { error in
-                if let error { continuation.resume(throwing: error) }
-                else { continuation.resume(returning: ()) }
+                if let error {
+                    let nsError = error as NSError
+                    print("[DEPL] Topic subscription failed: \(nsError.domain) \(nsError.code) \(nsError.localizedDescription)")
+                    continuation.resume(throwing: error)
+                } else {
+                    print("[DEPL] Topic subscription succeeded")
+                    continuation.resume(returning: ())
+                }
             }
         }
     }

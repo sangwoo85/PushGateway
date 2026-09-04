@@ -27,6 +27,7 @@ push:
     ttl: ${PUSH_QR_TTL:3m}
   test-page:
     enabled: ${PUSH_TEST_PAGE_ENABLED:false}
+    authentication-enabled: ${PUSH_TEST_PAGE_AUTHENTICATION_ENABLED:true}
     username: ${PUSH_TEST_PAGE_USERNAME:}
     password-hash: ${PUSH_TEST_PAGE_PASSWORD_HASH:}
     enqueue-when-firebase-disabled: ${PUSH_TEST_ENQUEUE_WHEN_FIREBASE_DISABLED:true}

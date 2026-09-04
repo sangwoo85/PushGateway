@@ -27,7 +27,8 @@ Firebase 클라이언트 구성 파일은 일반적으로 서버 개인키는 �
 ## 관리자 화면
 
 - 기본값은 `PUSH_TEST_PAGE_ENABLED=false`
-- 활성화 시 BCrypt hash와 별도 관리자 계정 필수
+- 기본값은 로그인 사용이며 BCrypt hash와 별도 관리자 계정 필수
+- localhost 개발 환경에서만 `PUSH_TEST_PAGE_AUTHENTICATION_ENABLED=false`와 `SERVER_ADDRESS=127.0.0.1` 사용 가능
 - `ROLE_PUSH_ADMIN` 또는 `ROLE_PUSH_TESTER`만 접근
 - POST는 CSRF 보호
 - 관리자별 분당 발송 제한
@@ -38,7 +39,7 @@ Firebase 클라이언트 구성 파일은 일반적으로 서버 개인키는 �
 
 ## 애플리케이션 데이터 최소화
 
-- Push에는 업무 내용이 아닌 알림 종류만 포함
+- Push에는 승인된 고정 알림 문구와 종류만 포함하고 업무 상세는 제외
 - FCM 토큰을 업무 DB에 저장하지 않는 Topic 방식
 - USER/DEPARTMENT Topic에 사번·이름·부서 코드를 직접 사용하지 않음
 - Android 자동 백업 비활성화
@@ -65,3 +66,5 @@ git ls-files | grep -E '(^|/)(google-services.json|GoogleService-Info.plist|.*\.
 - [ ] Queue `DEAD`, retry, latency, FCM 오류율 알림 설정
 - [ ] 로그에 Topic, 토큰, 업무 내용이 없는지 점검
 - [ ] 퇴사·부서이동 시 새 QR 발급 및 Topic 회전 절차 운영
+- [ ] APNs `.p8`를 Firebase 외 저장소에 업로드하지 않고, Apple Key ID/Team ID와 함께 접근 제한된 Secret 보관소에 백업
+- [ ] Debug는 개발 APNs 키, TestFlight/Ad Hoc/운영은 프로덕션 APNs 키가 등록됐는지 확인

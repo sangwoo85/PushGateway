@@ -20,6 +20,16 @@
 5. Xcode Signing & Capabilities에서 정식 Team과 Bundle ID를 설정합니다.
 6. `Info.plist`의 `ENROLLMENT_PUBLIC_KEY_X963_BASE64`에 QR 서명 검증용 ECDSA P-256 공개키의 X9.63 representation을 Base64로 넣습니다.
 7. `FIREBASE_PROJECT_ID`는 일반적으로 `GoogleService-Info.plist`에서 읽습니다. 별도 빌드 설정을 사용할 때만 동일 값을 지정합니다.
+8. Firebase Messaging 12.18 이상에서 `Messaging.register(completion:)`와 FID 기반 Topic 구독을 사용하려면 `Info.plist`의 `FirebaseMessagingInstallationIdEnabled`를 `YES`로 유지합니다.
+
+APNs 키는 Apple Developer에서 `Sandbox & Production`으로 발급할 수 있습니다. Firebase Console에서는 개발과 프로덕션 입력란이 분리되어 있으므로 다음처럼 등록합니다.
+
+| 빌드 | Firebase APNs 등록 위치 | 용도 |
+|---|---|---|
+| Xcode Debug / Development profile | 개발 APNs 인증 키 | 연결된 실기기 개발 테스트 |
+| TestFlight / Ad Hoc / App Store | 프로덕션 APNs 인증 키 | 사내 테스트 배포 및 운영 |
+
+하나의 `Sandbox & Production` `.p8` 키를 두 입력란에 사용할 수 있습니다. `.p8` 파일은 Apple에서 한 번만 내려받을 수 있으므로 Git이 아닌 Secret Manager 또는 접근 제한된 보관소에 백업합니다.
 
 무료 Personal Team은 Push Notifications capability를 지원하지 않습니다. 실제 APNs/FCM 검증에는 유료 Apple Developer Program이 필요합니다.
 
@@ -63,7 +73,10 @@ version|firebaseProjectId|userTopic|departmentTopic|noticeTopic|issuedAt|expires
 ```json
 {
   "eventId": "UUID",
-  "notificationType": "TASK_ARRIVED"
+  "notificationType": "TASK_ARRIVED",
+  "title": "업무 알림",
+  "body": "업무가 도착 했습니다.",
+  "templateVersion": "1"
 }
 ```
 
@@ -78,7 +91,7 @@ version|firebaseProjectId|userTopic|departmentTopic|noticeTopic|issuedAt|expires
 - `APPROVAL_TASK_ARRIVED`
 - `MENTIONED_TASK_DEPLOYED`
 
-알 수 없는 유형과 UUID가 아닌 `eventId`는 저장하지 않습니다. 업무 상세, 문서번호 및 민감정보는 Payload에 포함하지 않습니다.
+알 수 없는 유형, UUID가 아닌 `eventId`, 제목이나 본문이 없는 신규 Payload는 저장하지 않습니다. 앱은 유형별 문구를 자체 생성하지 않고 Gateway가 보낸 `title`·`body`를 그대로 저장·표시합니다. 업무 상세, 문서번호 및 민감정보는 Payload에 포함하지 않습니다.
 
 ## 빌드와 테스트
 
@@ -125,6 +138,8 @@ APNs 등록은 Simulator가 아닌 실제 기기와 유효한 Apple Developer �
 - provisioning profile 생성 실패: 유료 멤버십 상태와 App ID의 Push Notifications capability를 확인합니다.
 - APNs token 미생성: 실제 기기, 네트워크, 앱 권한, entitlements를 확인합니다.
 - FCM 수신 실패: Firebase Console에 올린 APNs Key ID/Team ID/`.p8` 조합과 Bundle ID를 확인합니다.
+- QR 등록 시 `FirebaseMessagingInstallationIdEnabled is not set to YES` 오류: `Info.plist`의 해당 Boolean 값을 `YES`로 설정하고 앱을 다시 설치합니다. Firebase Messaging 12.18의 `register()`는 이 설정이 없으면 FID 등록을 거부합니다.
+- FCM 준비 상태가 바뀌지 않음: `MessagingDelegate.messaging(_:didReceiveRegistration:)` 구현과 Firebase 초기화 이후 delegate 설정을 확인합니다.
 - QR 거부: 앱 공개키·Firebase Project ID·기기 시간·QR TTL을 확인합니다.
 
 ## 물리 iPhone 체크리스트

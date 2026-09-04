@@ -28,15 +28,32 @@ class NotificationRepositoryInstrumentedTest {
 
     @Test fun deduplicatesAndKeepsOnlyNewestThreeThousand() = runBlocking {
         val duplicate = UUID.randomUUID().toString()
-        val data = mapOf("eventId" to duplicate, "notificationType" to "TASK_ARRIVED")
+        val data = mapOf(
+            "eventId" to duplicate,
+            "notificationType" to "TASK_ARRIVED",
+            "title" to "업무 알림",
+            "body" to "업무가 도착 했습니다."
+        )
         repository.ingest(data, 1)
         assertNull(repository.ingest(data, 2))
         repeat(3_005) { index ->
             repository.ingest(mapOf(
                 "eventId" to UUID.randomUUID().toString(),
-                "notificationType" to "TASK_ARRIVED"
+                "notificationType" to "TASK_ARRIVED",
+                "title" to "업무 알림",
+                "body" to "업무가 도착 했습니다."
             ), index.toLong() + 10)
         }
         assertEquals(3_000, repository.count())
+    }
+
+    @Test fun rejectsPayloadWithoutGatewayRenderedMessage() = runBlocking {
+        val result = repository.ingest(mapOf(
+            "eventId" to UUID.randomUUID().toString(),
+            "notificationType" to "TASK_ARRIVED"
+        ))
+
+        assertNull(result)
+        assertEquals(0, repository.count())
     }
 }

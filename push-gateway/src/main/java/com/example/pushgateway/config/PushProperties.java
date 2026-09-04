@@ -15,7 +15,7 @@ public record PushProperties(Scheduler scheduler, Firebase firebase, Qr qr, Test
         scheduler = scheduler == null ? new Scheduler(true, Duration.ofSeconds(30), 100, Duration.ofMinutes(5), 5) : scheduler;
         firebase = firebase == null ? new Firebase(false, "") : firebase;
         qr = qr == null ? new Qr("", Duration.ofMinutes(3)) : qr;
-        testPage = testPage == null ? new TestPage(false, "", "", true, 10) : testPage;
+        testPage = testPage == null ? new TestPage(false, true, "", "", true, 10) : testPage;
     }
 
     public record Scheduler(boolean enabled, Duration fixedDelay, int batchSize,
@@ -44,7 +44,7 @@ public record PushProperties(Scheduler scheduler, Firebase firebase, Qr qr, Test
         }
     }
 
-    public record TestPage(boolean enabled, String username, String passwordHash,
+    public record TestPage(boolean enabled, boolean authenticationEnabled, String username, String passwordHash,
                            boolean enqueueWhenFirebaseDisabled, int requestsPerMinute) {
         public TestPage {
             username = username == null ? "" : username.trim();

@@ -1,5 +1,7 @@
 package com.example.pushgateway.config;
 
+import java.net.InetAddress;
+import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -28,11 +30,25 @@ public class SecurityConfiguration {
 
     @Bean
     @ConditionalOnProperty(prefix = "push.test-page", name = "enabled", havingValue = "true")
-    SecurityFilterChain testPageSecurity(HttpSecurity http) throws Exception {
-        return http.csrf(csrf -> csrf.ignoringRequestMatchers("/api/**"))
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/internal/**").hasAnyRole("PUSH_ADMIN", "PUSH_TESTER")
-                        .anyRequest().permitAll())
+    SecurityFilterChain testPageSecurity(HttpSecurity http, PushProperties properties) throws Exception {
+        http.csrf(csrf -> csrf.ignoringRequestMatchers("/api/**"));
+        if (!properties.testPage().authenticationEnabled()) {
+            return http.authorizeHttpRequests(auth -> auth
+                            .requestMatchers("/internal/**").access((authentication, context) -> {
+                                try {
+                                    return new AuthorizationDecision(InetAddress
+                                            .getByName(context.getRequest().getRemoteAddr()).isLoopbackAddress());
+                                } catch (Exception ignored) {
+                                    return new AuthorizationDecision(false);
+                                }
+                            })
+                            .anyRequest().permitAll())
+                    .formLogin(login -> login.disable())
+                    .build();
+        }
+        return http.authorizeHttpRequests(auth -> auth
+                    .requestMatchers("/internal/**").hasAnyRole("PUSH_ADMIN", "PUSH_TESTER")
+                    .anyRequest().permitAll())
                 .formLogin(login -> login.defaultSuccessUrl("/internal/push-test", true))
                 .build();
     }
@@ -46,6 +62,9 @@ public class SecurityConfiguration {
     @Bean
     @ConditionalOnProperty(prefix = "push.test-page", name = "enabled", havingValue = "true")
     UserDetailsService pushTestUsers(PushProperties properties) {
+        if (!properties.testPage().authenticationEnabled()) {
+            return new InMemoryUserDetailsManager();
+        }
         String username = properties.testPage().username();
         String hash = properties.testPage().passwordHash();
         if (username.isBlank() || !hash.matches("^\\$2[aby]\\$.+")) {

@@ -45,6 +45,7 @@ Spring Boot 3.5 / Java 21 / MariaDB outbox를 사용해 FCM Topic으로 고정 8
 | `PUSH_QR_PRIVATE_KEY_PATH` | 없음 | PKCS#8 P-256 개인키 PEM 경로 |
 | `PUSH_QR_TTL` | `3m` | QR 유효시간, 최대 10분 |
 | `PUSH_TEST_PAGE_ENABLED` | `false` | 내부 테스트 화면 활성화 |
+| `PUSH_TEST_PAGE_AUTHENTICATION_ENABLED` | `true` | 테스트 화면 로그인 사용 여부 |
 | `PUSH_TEST_PAGE_USERNAME` | 없음 | 테스트 관리자 계정 |
 | `PUSH_TEST_PAGE_PASSWORD_HASH` | 없음 | BCrypt hash만 허용 |
 | `PUSH_TEST_ENQUEUE_WHEN_FIREBASE_DISABLED` | `true` | FCM off 시 Queue 등록 여부 |
@@ -74,6 +75,24 @@ htpasswd -bnBC 12 "" "choose-a-strong-password"
 
 Firebase Console에서 DEPL iOS 앱과 APNs 인증키를 연결하고 전용 최소권한 서비스 계정 JSON을 Secret으로 마운트합니다. Gateway에서 필요한 외부 통신은 Google 인증/FCM/DNS 방향 outbound TCP 443뿐이며 신규 inbound 연결은 필요 없습니다.
 
+### Firebase 서버 발송 설정
+
+1. Firebase 프로젝트에서 Cloud Messaging API(HTTP v1)를 활성화합니다.
+2. Gateway 전용 서비스 계정을 만들고 필요한 최소 권한만 부여합니다.
+3. 서비스 계정 JSON은 저장소 밖의 Secret mount에 보관합니다.
+4. `FIREBASE_ENABLED=true`, `FIREBASE_PROJECT_ID`, `GOOGLE_APPLICATION_CREDENTIALS`를 실행 환경에 주입합니다.
+5. Gateway 시작 로그와 `/actuator/health`를 확인한 뒤 테스트 페이지에서 1건을 발송합니다.
+
+### Apple APNs 연결
+
+1. Apple Developer의 App ID에서 Push Notifications capability를 활성화합니다.
+2. APNs 인증 키를 `Sandbox & Production`으로 발급하고 `.p8`, Key ID, Team ID를 안전하게 보관합니다.
+3. Firebase Console의 Apple 앱 Cloud Messaging 설정에 개발 APNs 키를 등록합니다.
+4. TestFlight/Ad Hoc/운영 배포 전에는 프로덕션 APNs 키 영역에도 등록합니다.
+5. iOS Bundle ID, Apple Team, Firebase Apple 앱의 Bundle ID가 모두 같은지 확인합니다.
+
+APNs 키는 Firebase와 Apple 사이의 인증 수단이며 Gateway 서버에는 배치하지 않습니다. Gateway에는 Firebase Admin 서비스 계정만 필요합니다.
+
 ```bash
 openssl ecparam -name prime256v1 -genkey -noout -out enrollment-ec.pem
 openssl pkcs8 -topk8 -nocrypt -in enrollment-ec.pem -out enrollment-key.pem
@@ -102,9 +121,12 @@ Queue는 Topic 문자열을 받지 않습니다. USER/DEPARTMENT ID는 최대 12
 
 ```text
 PUSH_TEST_PAGE_ENABLED=true
+PUSH_TEST_PAGE_AUTHENTICATION_ENABLED=true
 PUSH_TEST_PAGE_USERNAME=<secret>
 PUSH_TEST_PAGE_PASSWORD_HASH=<bcrypt-secret>
 ```
+
+개발 PC의 localhost 전용 테스트에서는 `PUSH_TEST_PAGE_AUTHENTICATION_ENABLED=false`와 `SERVER_ADDRESS=127.0.0.1`로 로그인 화면을 끌 수 있습니다. 무인증 모드의 `/internal/**` 요청은 애플리케이션에서도 loopback 주소만 허용합니다. 공유·운영 환경에서는 사용하지 마십시오. 기본값은 `true`입니다.
 
 - GET `/internal/push-test/enrollment`: 사용자·부서·공지 Topic을 구독하는 서명 QR 생성 화면
 - GET `/internal/push-test/messages`: 사용자/부서 검색, 대상 선택, 고정 8종 Push 테스트 화면
@@ -116,15 +138,33 @@ PUSH_TEST_PAGE_PASSWORD_HASH=<bcrypt-secret>
 
 브라우저에서 `http://localhost:8080/`을 열면 로그인 후 QR 등록 화면으로 이동합니다. 기본 포트는 8080이며 `SERVER_PORT`로 바꿀 수 있습니다.
 
+로컬 데모의 예시는 다음과 같습니다.
+
+```text
+http://127.0.0.1:18080/internal/push-test/enrollment
+http://127.0.0.1:18080/internal/push-test/messages
+```
+
+QR은 기본 3분, 최대 10분만 유효합니다. 만료됐거나 앱 공개키·Firebase Project ID가 다른 QR은 앱이 구독 전에 거부합니다.
+
 부서·전체 공지는 확인 체크가 필수이고 성공 후 PRG redirect를 사용합니다. Topic, 서비스 계정, FCM message 원문은 화면에 노출하지 않습니다.
 
 이 독립 저장소에는 실제 업무 사용자/부서 테이블 DDL이 없으므로 테이블을 추측해 만들지 않았습니다. `BusinessDirectory` 기본 구현은 빈 결과입니다. 운영 통합 시 기존 테이블을 읽기 전용·검색어·최대 50건으로 조회하는 Bean을 제공하십시오. 사용자 결과는 `id/displayName/departmentId`, 부서는 `id/displayName`으로 매핑합니다. 본인 QR 화면은 요청 파라미터 대신 인증 Principal과 조회된 실제 부서 ID를 `EnrollmentQrService.issue()`에 전달해야 합니다.
 
 ## Payload와 모니터링
 
-FCM data는 `eventId`, `notificationType`, 두 mention 타입의 `actorName`만 포함합니다. wire mapping은 `TASK_COMMENT_CREATED→COMMENT_ADDED`, `SOURCE_OVERLAP→SOURCE_CONFLICT`, `NOTICE_CREATED→NOTICE_REGISTERED`입니다.
+FCM data는 `eventId`, `notificationType`, Gateway가 렌더링한 `title`·`body`, `templateVersion`을 포함합니다. 앱은 알림 문구를 자체 조립하지 않고 이 값을 그대로 저장·표시합니다. mention 타입의 `actorName`은 Queue 입력과 Gateway 렌더링에만 사용하며 FCM의 별도 필드로 보내지 않습니다. wire mapping은 `TASK_COMMENT_CREATED→COMMENT_ADDED`, `SOURCE_OVERLAP→SOURCE_CONFLICT`, `NOTICE_CREATED→NOTICE_REGISTERED`입니다.
 
 Meter는 `push.queue.waiting`, `push.queue.waiting.by_target`, `push.queue.dead`, `push.fcm.requests`, `push.fcm.request`, `push.topic.resolution.failure`, `push.qr.issue`, `push.test.request`, `push.process.*`입니다. 사용자·부서·Topic은 label로 사용하지 않습니다.
+
+## 장애 확인 순서
+
+1. Gateway 결과가 `FCM_ACCEPTED`인지 확인합니다. 이는 Firebase 접수 성공이며 단말 표시 완료를 뜻하지 않습니다.
+2. Queue가 `RETRY` 또는 `DEAD`이면 마지막 오류 분류와 서비스 계정 권한, Google outbound 443을 확인합니다.
+3. iOS는 APNs development/production 입력란과 빌드 profile 환경이 맞는지 확인합니다.
+4. Android/iOS 모두 앱에서 알림 권한과 개인·부서·공지 Topic 등록 완료 상태를 확인합니다.
+5. 앱 재등록이 실패하면 새 QR을 발급하고 Project ID, 공개키, 기기 시각, QR TTL을 확인합니다.
+6. 동일 알림이 중복되면 Gateway history의 `event_id`와 앱 로컬 저장소의 unique 처리 여부를 확인합니다.
 
 ## 검증
 

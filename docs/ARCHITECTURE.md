@@ -31,7 +31,7 @@
 1. 업무 트랜잭션이 업무 데이터와 `push_queue` 행을 함께 commit합니다.
 2. Scheduler가 `PENDING`/`RETRY` 행을 `FOR UPDATE SKIP LOCKED`로 선점합니다.
 3. 짧은 DB 트랜잭션에서 상태를 `PROCESSING`으로 변경하고 잠금을 해제합니다.
-4. DB 트랜잭션 밖에서 Topic을 찾고 FCM을 호출합니다.
+4. Gateway의 중앙 템플릿에서 `title`·`body`를 생성하고, DB 트랜잭션 밖에서 Topic을 찾아 FCM을 호출합니다.
 5. FCM 접수 성공 시 별도 트랜잭션에서 history INSERT 후 queue DELETE를 수행합니다.
 6. 실패 시 재시도 가능 여부에 따라 `RETRY` 또는 `DEAD`로 전환합니다.
 
@@ -60,6 +60,7 @@ FCM 호출과 MariaDB commit은 하나의 분산 트랜잭션이 될 수 없으�
 - 앱 로컬 DB의 `eventId` unique index
 - Android는 최대 3,000건을 Paging으로 표시
 - FCM `FCM_ACCEPTED`는 단말 표시 완료가 아니라 Firebase 접수 완료로 정의
+- Android와 iOS는 Gateway가 보낸 `title`·`body`를 그대로 저장·표시하며 8종 문구를 앱 코드에 중복 정의하지 않음
 
 ## Topic 등록
 

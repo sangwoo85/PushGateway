@@ -102,11 +102,12 @@ public class PushTestController {
             return "redirect:/internal/push-test/messages";
         }
         try {
-            limiter.check(principal.getName());
+            String actor = principal == null ? "local-test" : principal.getName();
+            limiter.check(actor);
             UUID eventId = queueService.enqueueForTest(form.targetType(), form.targetId(),
                     form.notificationType(), form.actorName());
             audit.info("actor={} targetType={} target={} notificationType={} eventId={}",
-                    principal.getName(), form.targetType(), mask(form.targetId()),
+                    actor, form.targetType(), mask(form.targetId()),
                     form.notificationType(), eventId);
             metrics.counter("push.test.request", "target_type", form.targetType().name()).increment();
             return "redirect:/internal/push-test/events/" + eventId;

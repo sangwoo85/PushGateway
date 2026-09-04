@@ -43,7 +43,7 @@
 | `APPROVAL_TASK_ARRIVED` | `APPROVAL_TASK_ARRIVED` | 결재할 업무가 도착했습니다. | 아니요 |
 | `MENTIONED_TASK_DEPLOYED` | `MENTIONED_TASK_DEPLOYED` | 당신이 언급된 업무가 운영에 반영되었습니다. | 아니요 |
 
-알림 Payload에는 `eventId`, `notificationType`, 필요한 경우에만 `actorName`이 포함됩니다. 업무명, 문서번호, 댓글 내용 등은 전송하지 않습니다.
+Push Gateway가 위 표의 문구를 생성하며 앱은 문구를 자체 조립하지 않습니다. FCM data에는 `eventId`, `notificationType`, `title`, `body`, `templateVersion`이 포함됩니다. 언급 알림의 행위자 이름은 Gateway가 `body`에 반영하고 별도 필드로 전송하지 않습니다. 업무명, 문서번호, 댓글 내용 등은 전송하지 않습니다.
 
 ## 시작하기
 
@@ -57,6 +57,7 @@
 구체적인 실행 방법은 다음 문서를 참고하세요.
 
 - [Gateway 설치·운영](push-gateway/README.md)
+- [Gateway 운영 가이드 PDF](output/pdf/DEPL-PushGateway-Guide.pdf)
 - [Android 앱 설정·실기기 테스트](android-app/README.md)
 - [iOS 앱 설정·실기기 테스트](ios-app/README.md)
 - [API 및 Payload 명세](docs/API.md)
@@ -71,6 +72,15 @@ cd ../android-app && ./gradlew testDebugUnitTest lintDebug assembleDebug
 ```
 
 iOS는 macOS와 Xcode가 필요합니다. 자세한 명령은 [iOS README](ios-app/README.md)를 확인하세요.
+
+## 현재 검증 범위
+
+- Spring Boot Gateway: Queue 처리, 재시도/DEAD, QR 발급, 관리자 페이지 자동 테스트
+- Android: QR Topic 등록, 잠금 화면 알림 채널, Room/Paging 최대 3,000건 저장
+- iOS: 유료 Apple Developer 서명, APNs development entitlement, Firebase FID 등록, QR Topic 등록
+- Firebase: HTTP v1 발송 및 iOS 개발 APNs 인증 키 연결
+
+Debug iPhone은 Firebase의 **개발 APNs 인증 키**를 사용합니다. TestFlight, Ad Hoc 또는 운영 배포 전에 동일 Apple APNs 키를 Firebase의 **프로덕션 APNs 인증 키** 영역에도 등록해야 합니다.
 
 ## 저장소에 포함되지 않는 파일
 

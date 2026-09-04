@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class NotificationTemplateFactory {
     public static final String TITLE = "업무 알림";
+    public static final String TEMPLATE_VERSION = "1";
     private static final int MAX_ACTOR_LENGTH = 50;
 
     public NotificationContent create(NotificationType type, String actorName) {

@@ -34,6 +34,10 @@ class FirebasePushSenderTest {
         @SuppressWarnings("unchecked") Map<String, String> data = (Map<String, String>) field(message, "data");
         assertThat(data).containsEntry("notificationType", "COMMENT_ADDED")
                 .containsEntry("eventId", item.eventId().toString())
+                .containsEntry("title", "업무 알림")
+                .containsEntry("body", "내용")
+                .containsEntry("templateVersion", "1")
+                .doesNotContainKey("actorName")
                 .doesNotContainKey("type");
     }
 
