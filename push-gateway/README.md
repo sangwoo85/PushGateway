@@ -73,7 +73,7 @@ htpasswd -bnBC 12 "" "choose-a-strong-password"
 
 ## Firebase와 QR 키 설정
 
-Firebase Console에서 DEPL iOS 앱과 APNs 인증키를 연결하고 전용 최소권한 서비스 계정 JSON을 Secret으로 마운트합니다. Gateway에서 필요한 외부 통신은 Google 인증/FCM/DNS 방향 outbound TCP 443뿐이며 신규 inbound 연결은 필요 없습니다.
+Firebase Console에서 DEPL iOS 앱과 APNs 인증키를 연결하고 전용 최소권한 서비스 계정 JSON을 Secret으로 마운트합니다. 현재 서비스 계정 JSON 구성의 외부 통신은 `fcm.googleapis.com`과 `oauth2.googleapis.com` 방향 outbound TCP 443입니다. DNS는 별도로 사내 DNS의 UDP/TCP 53을 사용하며 신규 인터넷 inbound 연결은 필요 없습니다. 조건부 추가 주소와 회사 전환 절차는 [폐쇄망 설치와 회사 Firebase 전환](../docs/COMPANY-DEPLOYMENT.md)을 참고하세요. 기존 PDF는 2026-09-04 스냅샷이며 이 네트워크 설명은 본 Markdown과 연결된 전환 문서가 최신입니다.
 
 ### Firebase 서버 발송 설정
 

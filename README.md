@@ -57,6 +57,7 @@ Push Gateway가 위 표의 문구를 생성하며 앱은 문구를 자체 조립
 구체적인 실행 방법은 다음 문서를 참고하세요.
 
 - [Gateway 설치·운영](push-gateway/README.md)
+- [폐쇄망 방화벽·회사 Firebase 전환](docs/COMPANY-DEPLOYMENT.md)
 - [Gateway 운영 가이드 PDF](output/pdf/DEPL-PushGateway-Guide.pdf)
 - [Android 앱 설정·실기기 테스트](android-app/README.md)
 - [iOS 앱 설정·실기기 테스트](ios-app/README.md)
