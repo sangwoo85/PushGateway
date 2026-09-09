@@ -56,12 +56,18 @@ Push Gateway가 위 표의 문구를 생성하며 앱은 문구를 자체 조립
 
 구체적인 실행 방법은 다음 문서를 참고하세요.
 
+현재 Gateway Java 패키지와 Maven groupId는 `com.sangwoo.push`입니다. `output/pdf/`의 기존 PDF는 작성 당시 스냅샷으로 이전 패키지 표기가 남아 있을 수 있습니다. 최신 코드 위치·정식 QR 발급 명세는 아래 Markdown 문서를 기준으로 확인하세요.
+
 - [Gateway 설치·운영](push-gateway/README.md)
+- [Gateway 개발·기능 변경 검토 가이드](docs/PUSH-GATEWAY-DEVELOPMENT.md)
+- [Gateway 개발 가이드 PDF](output/pdf/DEPL-PushGateway-Development-Guide.pdf)
 - [폐쇄망 방화벽·회사 Firebase 전환](docs/COMPANY-DEPLOYMENT.md)
 - [Gateway 운영 가이드 PDF](output/pdf/DEPL-PushGateway-Guide.pdf)
 - [Android 앱 설정·실기기 테스트](android-app/README.md)
 - [iOS 앱 설정·실기기 테스트](ios-app/README.md)
 - [API 및 Payload 명세](docs/API.md)
+- [정식 QR 발급 API·회사 인증 연동](docs/QR-ENROLLMENT-API.md)
+- [업무 시스템 QR 자체 발급·Java 예제](docs/BUSINESS-SYSTEM-QR-ISSUANCE.md)
 - [아키텍처와 장애 처리](docs/ARCHITECTURE.md)
 - [보안 설정과 공개 저장소 체크리스트](docs/SECURITY.md)
 

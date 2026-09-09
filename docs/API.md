@@ -32,7 +32,11 @@ public void assignTask(String taskId, String assigneeId) {
 - 나머지 유형: `actorName` 전달 금지
 - 공지는 `NOTICE / ALL / notice_all`로 내부 정규화
 
-## 관리자 화면
+## 정식 QR 발급
+
+`GET /internal/push/enrollment/qr?userId={id}&departmentId={id}`는 테스트 기능과 독립된 정식 PNG 발급 API입니다. PUSH_ADMIN 또는 PUSH_ENROLLMENT_ISSUER 인증 권한 및 실제 사용자·부서 소속 검증이 필요합니다. 상세 요청·오류·회사 인증 및 조회 연동은 [정식 QR 발급 명세](QR-ENROLLMENT-API.md)를 참고하세요.
+
+## 테스트 관리자 화면
 
 | Method | Path | 설명 | 응답 |
 |---|---|---|---|

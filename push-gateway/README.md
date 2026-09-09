@@ -55,6 +55,8 @@ Spring Boot 3.5 / Java 21 / MariaDB outbox를 사용해 FCM Topic으로 고정 8
 
 ## 로컬 실행
 
+Java 기본 패키지와 Maven groupId는 `com.sangwoo.push`이며 시작 클래스는 `com.sangwoo.push.PushGatewayApplication`입니다. 소스와 테스트는 각각 `src/main/java/com/sangwoo/push`, `src/test/java/com/sangwoo/push`에 있습니다. Android applicationId와 iOS Bundle ID는 별도 설정입니다.
+
 필요 도구는 JDK 21, Maven, MariaDB 10.6 이상입니다. 환경변수 이름은 [`.env.example`](.env.example)을 참고하되 실제 값을 저장소 안의 `.env`에 보관하지 마세요.
 
 ```bash
@@ -72,6 +74,8 @@ htpasswd -bnBC 12 "" "choose-a-strong-password"
 출력에서 앞의 구분 문자만 제거한 전체 `$2y$...` 문자열을 `PUSH_TEST_PAGE_PASSWORD_HASH`로 사용합니다. 셸에서 `$`가 변수로 해석되지 않도록 Secret Manager, IDE 환경 설정 또는 안전한 env-file 로더를 사용하세요.
 
 ## Firebase와 QR 키 설정
+
+정식 발급 경로는 `GET /internal/push/enrollment/qr`입니다. 테스트 페이지를 꺼도 등록되며 별도의 발급 권한과 정확한 사용자·부서 조회가 필요합니다. 회사 인증 및 `BusinessDirectory.findUserById/findDepartmentById` 연동 전에는 발급할 수 없습니다. [정식 QR API 명세](../docs/QR-ENROLLMENT-API.md)를 참고하세요.
 
 Firebase Console에서 DEPL iOS 앱과 APNs 인증키를 연결하고 전용 최소권한 서비스 계정 JSON을 Secret으로 마운트합니다. 현재 서비스 계정 JSON 구성의 외부 통신은 `fcm.googleapis.com`과 `oauth2.googleapis.com` 방향 outbound TCP 443입니다. DNS는 별도로 사내 DNS의 UDP/TCP 53을 사용하며 신규 인터넷 inbound 연결은 필요 없습니다. 조건부 추가 주소와 회사 전환 절차는 [폐쇄망 설치와 회사 Firebase 전환](../docs/COMPANY-DEPLOYMENT.md)을 참고하세요. 기존 PDF는 2026-09-04 스냅샷이며 이 네트워크 설명은 본 Markdown과 연결된 전환 문서가 최신입니다.
 
