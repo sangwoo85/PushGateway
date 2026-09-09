@@ -50,10 +50,25 @@ Spring Boot 3.5 / Java 21 / MariaDB outbox를 사용해 FCM Topic으로 고정 8
 | `PUSH_TEST_PAGE_PASSWORD_HASH` | 없음 | BCrypt hash만 허용 |
 | `PUSH_TEST_ENQUEUE_WHEN_FIREBASE_DISABLED` | `true` | FCM off 시 Queue 등록 여부 |
 | `PUSH_TEST_REQUESTS_PER_MINUTE` | `10` | 관리자별 분당 발송 제한 |
+| `PUSH_LOG_DIR` | `./logs` | 현재 로그 및 일별 압축 로그의 기준 경로 |
 
 서비스 계정 JSON, 개인키, 비밀번호 원문은 저장소·DB·이미지·로그에 넣지 않습니다.
 
 ## 로컬 실행
+
+### 로그 파일 및 일별 압축 보관
+
+`src/main/resources/logback-spring.xml`에서 콘솔 출력과 파일 출력을 함께 설정합니다. 기존 eventId 표시를 유지하며 파일은 UTF-8, 날짜와 일별 롤링 기준은 Asia/Seoul입니다.
+
+- 현재 로그: `${PUSH_LOG_DIR}/push-gateway.log`
+- 일별 압축: `${PUSH_LOG_DIR}/backup/2026/09/push-gateway.2026-09-09.log.gz`
+- 날짜가 바뀐 뒤 첫 로그가 기록될 때 지난 로그를 분리하고 gzip으로 압축합니다. 앱 중지 중에는 예약 작업처럼 실행되지 않습니다.
+- 자동 삭제·보관 기간·전체 용량 제한은 설정하지 않았습니다. 디스크 사용량을 모니터링하고 추후 보관 정책을 정하세요. 월 폴더 전체 압축은 수행하지 않습니다.
+- 경로의 기본값 `./logs`는 실행 작업 디렉터리 기준입니다. 서버에서는 `PUSH_LOG_DIR=/var/log/push-gateway`처럼 절대 경로를 지정하고 실행 계정에만 필요한 읽기/쓰기 권한을 부여하세요.
+- 여러 Gateway 프로세스는 서로 다른 로그 경로를 사용해야 합니다. 이 설정은 동일 파일의 다중 프로세스 기록을 지원하지 않습니다.
+- `.env.example`은 참고용입니다. Spring Boot가 `.env`를 자동으로 읽는 것은 아니므로 환경변수를 실행 서비스에 주입하세요. 변경된 설정은 재배포·재시작 후 적용됩니다.
+
+### 실행 명령
 
 Java 기본 패키지와 Maven groupId는 `com.sangwoo.push`이며 시작 클래스는 `com.sangwoo.push.PushGatewayApplication`입니다. 소스와 테스트는 각각 `src/main/java/com/sangwoo/push`, `src/test/java/com/sangwoo/push`에 있습니다. Android applicationId와 iOS Bundle ID는 별도 설정입니다.
 

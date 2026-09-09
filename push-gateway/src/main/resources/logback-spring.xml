@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+    <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
+
+    <property name="GATEWAY_LOG_DIR" value="${PUSH_LOG_DIR:-./logs}"/>
+
+    <appender name="GATEWAY_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${GATEWAY_LOG_DIR}/push-gateway.log</file>
+        <append>true</append>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- Only the day token controls rollover; the year/month token is auxiliary. -->
+            <fileNamePattern>${GATEWAY_LOG_DIR}/backup/%d{yyyy/MM,aux,Asia/Seoul}/push-gateway.%d{yyyy-MM-dd,Asia/Seoul}.log.gz</fileNamePattern>
+            <!-- No automatic deletion until an explicit retention policy is agreed. -->
+            <maxHistory>0</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <charset>UTF-8</charset>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS,Asia/Seoul} %5level [eventId:%X{eventId:-}] [%thread] %logger{36} - %msg%n%ex</pattern>
+        </encoder>
+    </appender>
+
+    <root level="${LOG_LEVEL_ROOT:-INFO}">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="GATEWAY_FILE"/>
+    </root>
+</configuration>
