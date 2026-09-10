@@ -1,5 +1,9 @@
 # DEPL iOS 알림 앱
 
+실제 iPhone 화면으로 따라 하는 [QR 등록·알림 내역 사용자 가이드](../docs/IPHONE-USER-GUIDE.md)와 [사용자 가이드 PDF](../output/pdf/DEPL-iPhone-QR-History-User-Guide.pdf)를 제공합니다.
+
+English: [User guide](../docs/IPHONE-USER-GUIDE.en.md) · [PDF](../output/pdf/DEPL-iPhone-QR-History-User-Guide-EN.pdf).
+
 `PushReceiver.xcodeproj`는 iOS 17+, SwiftUI, Firebase Messaging 12.18.0을 사용합니다. 외부망의 앱이 폐쇄망 Push Gateway에 접속하지 않고, 업무 시스템 화면의 QR을 촬영해 개인·부서·전체 공지 FCM Topic을 직접 구독합니다.
 
 ## 통신 구조
@@ -9,7 +13,7 @@
 폐쇄망 Push Gateway ── HTTPS 443 ──▶ FCM ──▶ APNs ──▶ iPhone 앱
 ```
 
-앱은 FCM 등록 토큰을 업무 시스템에 전송하지 않습니다. Push Gateway 주소를 호출하는 코드도 없습니다. 알림 내역은 `eventId` 기준으로 중복을 제거해 기기에 최대 50건 저장합니다.
+앱은 FCM 등록 토큰을 업무 시스템에 전송하지 않습니다. Push Gateway 주소를 호출하는 코드도 없습니다. 현재 소스의 알림 내역 저장 상한은 `eventId` 기준으로 중복을 제거한 최신 3,000건입니다. 이전 문서의 50건 표기는 잘못된 정보입니다. 다만 백그라운드·종료 상태에서 표시된 모든 알림의 앱 내 저장을 보장하지 않습니다. 새로고침은 로컬 저장 내역만 다시 읽으며 서버 내역을 동기화하지 않습니다.
 
 ## 필요한 운영 설정
 

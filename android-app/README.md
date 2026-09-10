@@ -1,5 +1,9 @@
 # DEPL Android 알림 앱
 
+실제 Android 화면으로 따라 하는 [QR 등록·알림 내역 사용자 가이드](../docs/ANDROID-USER-GUIDE.md)와 [사용자 가이드 PDF](../output/pdf/DEPL-Android-QR-History-User-Guide.pdf)를 제공합니다.
+
+English: [User guide](../docs/ANDROID-USER-GUIDE.en.md) · [PDF](../output/pdf/DEPL-Android-QR-History-User-Guide-EN.pdf).
+
 Kotlin, Jetpack Compose, Firebase Messaging, CameraX, ML Kit, Room/Paging으로 구현한 Android 알림 전용 앱입니다. Gateway와 직접 통신하지 않으며 서명된 QR을 검증한 뒤 개인·부서·공지 FCM Topic을 구독합니다.
 
 ## 준비
